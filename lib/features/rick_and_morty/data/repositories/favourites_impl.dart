@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+
 import 'package:rick_and_morty_app/common/domain/errors/failures.dart';
 import 'package:rick_and_morty_app/features/rick_and_morty/data/datasources/local/favourites_local_data_source.dart';
 import 'package:rick_and_morty_app/features/rick_and_morty/data/datasources/local/local_data_source.dart';
@@ -31,16 +32,46 @@ class FavouritesRepositoryImpl implements FavouritesRepository {
   }
 
   @override
-  Future<Either<Failure, List<Character>>> getFavourites() {
-    // TODO: implement getFavourites
-    throw UnimplementedError();
+  Future<Either<Failure, List<Character>>> getFavourites() async {
+    try {
+      final List<int> favouriteIds = await favouritesLocalDataSource
+          .getFavourites();
+
+      final List<Character> characters = [];
+
+      for (final int id in favouriteIds) {
+        try {
+          final Character? cachedCharacter = await localDataSource
+              .getCachedCharacter(id: id);
+
+          if (cachedCharacter != null) {
+            characters.add(cachedCharacter);
+          } else {
+            final Character remoteCharacter = await remoteDataSource
+                .getCharacter(id: id);
+            characters.add(remoteCharacter);
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      return Right(characters);
+    } catch (e) {
+      return Left(CacheFailure("Couldn't load favourites"));
+    }
   }
 
   @override
   Future<Either<Failure, void>> removeFavourite({
     required Character character,
-  }) {
-    // TODO: implement removeFavourite
-    throw UnimplementedError();
+  }) async {
+    try {
+      await favouritesLocalDataSource.removeFavourite(id: character.id);
+
+      return Right(null);
+    } catch (e) {
+      return Left(CacheFailure("Couldn't remove the favourite"));
+    }
   }
 }
