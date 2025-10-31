@@ -11,8 +11,38 @@ class LocalDataSourceImpl implements LocalDataSource {
     final Box characterBox = await Hive.openBox(characterBoxName);
 
     return characterBox.values
+        .expand((e) => e)
         .map<Character>(
           (value) => CharacterEntity.fromJson(Map<String, dynamic>.from(value)),
+        )
+        .toList();
+  }
+
+  @override
+  Future cacheCharacterPage({
+    required int page,
+    required List<Character> characterPage,
+  }) async {
+    final Box characterBox = await Hive.openBox(characterBoxName);
+
+    if (characterPage is List<CharacterEntity>) {
+      await characterBox.put(
+        page,
+        characterPage.map((entity) => entity.toJson()),
+      );
+    }
+  }
+
+  @override
+  Future<List<Character>?> getCachedPage({int page = 1}) async {
+    final Box characterBox = await Hive.openBox(characterBoxName);
+
+    final data = characterBox.get(page);
+    if (data == null) return null;
+
+    return data
+        .map(
+          (json) => CharacterEntity.fromJson(Map<String, dynamic>.from(json)),
         )
         .toList();
   }
@@ -21,19 +51,14 @@ class LocalDataSourceImpl implements LocalDataSource {
   Future<Character?> getCachedCharacter({required int id}) async {
     final Box characterBox = await Hive.openBox(characterBoxName);
 
-    final data = characterBox.get(id);
-    if (data == null) return null;
-
-    return CharacterEntity.fromJson(Map<String, dynamic>.from(data));
-  }
-
-  @override
-  Future cacheCharacter({required Character character}) async {
-    final Box characterBox = await Hive.openBox(characterBoxName);
-
-    if (character is CharacterEntity) {
-      await characterBox.put(character.id, character.toJson());
-    }
+    return characterBox.values
+        .expand((e) => e)
+        .map<Character>(
+          (value) => CharacterEntity.fromJson(Map<String, dynamic>.from(value)),
+        )
+        .toList()
+        .where((entity) => entity.id == id)
+        .singleOrNull;
   }
 
   @override
