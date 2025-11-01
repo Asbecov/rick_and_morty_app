@@ -35,7 +35,7 @@ flutter build apk --release
 ```
 
 ## Версии проекта
-- Flutter SDK: ^3.8.1 (см. `pubspec.yaml`)
+- Flutter SDK: 3.32.6
 
 ### Основные зависимости (из `pubspec.yaml`):
 - cached_network_image: ^3.4.1
