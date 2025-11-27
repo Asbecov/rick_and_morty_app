@@ -7,29 +7,25 @@ import 'package:rick_and_morty_app/features/rick_and_morty/data/enitites/charact
 import 'package:rick_and_morty_app/features/rick_and_morty/domain/models/character.dart';
 
 class LocalDataSourceImpl implements LocalDataSource {
+  final Box<List<dynamic>> hiveBox;
+
+  LocalDataSourceImpl(this.hiveBox);
+
   static const String characterBoxName = "characters";
 
-  Box<List<dynamic>>? _characterBox;
-  final Map<int, Character> _inMemoryCache = {};
-
-  FutureOr<Box<List<dynamic>>> get _box async {
-    _characterBox ??= await Hive.openBox<List<dynamic>>(characterBoxName);
-    return _characterBox!;
-  }
-
-  Future _syncInMemoryCache() async {
-    _inMemoryCache.clear();
-
-    final List<Character> characters = (await _box).values
+  Map<int, Character> groupById(Iterable<List<dynamic>> list) {
+    final List<MapEntry<int, Character>> entries = list
         .expand((e) => e)
-        .map<Character>(
-          (value) => CharacterEntity.fromJson(Map<String, dynamic>.from(value)),
-        )
+        .map<MapEntry<int, Character>>((value) {
+          final Character character = CharacterEntity.fromJson(
+            Map<String, dynamic>.from(value),
+          );
+
+          return MapEntry(character.id, character);
+        })
         .toList();
 
-    _inMemoryCache.addEntries(
-      characters.map((character) => MapEntry(character.id, character)),
-    );
+    return Map.fromEntries(entries);
   }
 
   @override
@@ -39,34 +35,26 @@ class LocalDataSourceImpl implements LocalDataSource {
   }) async {
     if (characterPage is! List<CharacterEntity>) return;
 
-    await (await _box).put(
+    await hiveBox.put(
       page,
       characterPage.map((character) => character.toJson()).toList(),
     );
-
-    await _syncInMemoryCache();
   }
 
   @override
-  Future<Character?> getCachedCharacter({required int id}) async {
-    if (_inMemoryCache.containsKey(id)) return _inMemoryCache[id];
-
-    await _syncInMemoryCache();
-
-    return _inMemoryCache[id];
-  }
+  Character? getCachedCharacter({required int id}) =>
+      groupById(hiveBox.values)[id];
 
   @override
-  Future<List<Character>> getCachedList() async {
-    if (_inMemoryCache.isNotEmpty) return _inMemoryCache.values.toList();
-
-    await _syncInMemoryCache();
-
-    return _inMemoryCache.values.toList();
-  }
+  List<Character> getCachedList() => hiveBox.values
+      .expand((e) => e)
+      .map<Character>(
+        (value) => CharacterEntity.fromJson(Map<String, dynamic>.from(value)),
+      )
+      .toList();
 
   @override
-  Future<List<Character>?> getCachedPage({int page = 1}) async => (await _box)
+  List<Character>? getCachedPage({int page = 1}) => hiveBox
       .get(page)
       ?.map<Character>(
         (value) => CharacterEntity.fromJson(Map<String, dynamic>.from(value)),

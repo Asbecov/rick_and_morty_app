@@ -27,9 +27,7 @@ class RickAndMortyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) {
-            final bloc = CharacterListBloc(
-              loadCharactersUseCase: loadCharactersUseCase,
-            );
+            final bloc = CharacterListBloc(loadCharactersUseCase: sl());
             bloc.add(LoadCharactersPage(1, isInitialLoad: true));
             return bloc;
           },
@@ -37,9 +35,9 @@ class RickAndMortyApp extends StatelessWidget {
         BlocProvider(
           create: (context) {
             final bloc = FavouritesBloc(
-              loadFavouritesUseCase: loadFavouritesUseCase,
-              addFavouriteUseCase: addFavouriteUseCase,
-              removeFavouriteUseCase: removeFavouriteUseCase,
+              loadFavouritesUseCase: sl(),
+              addFavouriteUseCase: sl(),
+              removeFavouriteUseCase: sl(),
             );
             bloc.add(LoadFavourites());
             return bloc;

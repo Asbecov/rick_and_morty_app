@@ -85,6 +85,7 @@ class FavouritesPage extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
+                      spacing: 12,
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -114,25 +115,31 @@ class FavouritesPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
                         Expanded(
                           child: SizedBox(
                             height: 120,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  character.name,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                Expanded(
+                                  child: Text(
+                                    character.name,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${character.gender} • ${character.status}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
+                                Expanded(
+                                  child: Text(
+                                    '${character.gender} • ${character.status}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 const Spacer(),
                                 Align(

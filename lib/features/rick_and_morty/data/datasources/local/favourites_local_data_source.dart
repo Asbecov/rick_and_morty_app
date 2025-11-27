@@ -1,9 +1,11 @@
+import 'dart:async';
+
 abstract interface class FavouritesLocalDataSource {
-  Future<List<int>> getFavourites();
+  FutureOr<List<int>> getFavourites();
 
-  Future addFavourite({required int id});
+  FutureOr addFavourite({required int id});
 
-  Future removeFavourite({required int id});
+  FutureOr removeFavourite({required int id});
 
-  Future clearCache();
+  FutureOr clearCache();
 }

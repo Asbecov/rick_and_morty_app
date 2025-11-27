@@ -1,4 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:get_it/get_it.dart';
+import 'package:hive/hive.dart';
+
 import 'package:rick_and_morty_app/features/rick_and_morty/data/datasources/local/favourites_local_data_source.dart';
 import 'package:rick_and_morty_app/features/rick_and_morty/data/datasources/local/favourites_local_data_source_impl.dart';
 import 'package:rick_and_morty_app/features/rick_and_morty/data/datasources/local/local_data_source.dart';
@@ -15,38 +18,59 @@ import 'package:rick_and_morty_app/features/rick_and_morty/domain/usecases/load_
 import 'package:rick_and_morty_app/features/rick_and_morty/domain/usecases/load_favourites_use_case.dart';
 import 'package:rick_and_morty_app/features/rick_and_morty/domain/usecases/remove_favourite_use_case.dart';
 
-final Dio dio = Dio();
-final RickAndMortyApi api = RickAndMortyApi(dio);
+final sl = GetIt.instance;
 
-final RemoteDataSource remoteDataSource = RemoteDataSourceImpl(api: api);
-final LocalDataSource localDataSource = LocalDataSourceImpl();
-final FavouritesLocalDataSource favouritesLocalDataSource =
-    FavouritesLocalDataSourceImpl();
-
-final CharacterListRepository characterListRepository =
-    CharacterListRepositoryImpl(
-      localDataSource: localDataSource,
-      remoteDataSource: remoteDataSource,
+class AppDi {
+  static Future<void> initDi() async {
+    final Box<int> favouritesBox = await Hive.openBox(
+      FavouritesLocalDataSourceImpl.favoruitesBoxName,
+    );
+    final Box<List<dynamic>> hiveBox = await Hive.openBox(
+      LocalDataSourceImpl.characterBoxName,
     );
 
-final FavouritesRepository favouritesRepository = FavouritesRepositoryImpl(
-  favouritesLocalDataSource: favouritesLocalDataSource,
-  localDataSource: localDataSource,
-  remoteDataSource: remoteDataSource,
-);
+    sl.registerLazySingleton<Dio>(() => Dio());
+    sl.registerSingleton<Box<int>>(favouritesBox);
+    sl.registerSingleton<Box<List<dynamic>>>(hiveBox);
 
-final LoadCharactersUseCase loadCharactersUseCase = LoadCharactersUseCase(
-  characterListRepository: characterListRepository,
-);
+    sl.registerLazySingleton<RickAndMortyApi>(() => RickAndMortyApi(sl()));
 
-final LoadFavouritesUseCase loadFavouritesUseCase = LoadFavouritesUseCase(
-  favouritesRepository: favouritesRepository,
-);
+    sl.registerLazySingleton<RemoteDataSource>(
+      () => RemoteDataSourceImpl(api: sl()),
+    );
 
-final AddFavouriteUseCase addFavouriteUseCase = AddFavouriteUseCase(
-  favouritesRepository: favouritesRepository,
-);
+    sl.registerLazySingleton<LocalDataSource>(() => LocalDataSourceImpl(sl()));
 
-final RemoveFavouriteUseCase removeFavouriteUseCase = RemoveFavouriteUseCase(
-  favouritesRepository: favouritesRepository,
-);
+    sl.registerLazySingleton<FavouritesLocalDataSource>(
+      () => FavouritesLocalDataSourceImpl(sl()),
+    );
+
+    sl.registerLazySingleton<CharacterListRepository>(
+      () => CharacterListRepositoryImpl(
+        localDataSource: sl(),
+        remoteDataSource: sl(),
+      ),
+    );
+
+    sl.registerLazySingleton<FavouritesRepository>(
+      () => FavouritesRepositoryImpl(
+        favouritesLocalDataSource: sl(),
+        localDataSource: sl(),
+        remoteDataSource: sl(),
+      ),
+    );
+
+    // ===== USE CASES =====
+    sl.registerFactory(
+      () => LoadCharactersUseCase(characterListRepository: sl()),
+    );
+
+    sl.registerFactory(() => LoadFavouritesUseCase(favouritesRepository: sl()));
+
+    sl.registerFactory(() => AddFavouriteUseCase(favouritesRepository: sl()));
+
+    sl.registerFactory(
+      () => RemoveFavouriteUseCase(favouritesRepository: sl()),
+    );
+  }
+}
